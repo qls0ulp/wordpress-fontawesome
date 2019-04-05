@@ -299,7 +299,7 @@ class EnqueuedAssetsOutputTest extends \WP_UnitTestCase {
 		$fa_load->invoke( fa() );
 
 		$this->assertTrue( fa()->using_pseudo_elements() );
-		$this->assertEquals( 'svg', fa()->fa_method() );
+		$this->assertEquals( 'svg', fa()->technology() );
 
 		$output = $this->captureOutput();
 
