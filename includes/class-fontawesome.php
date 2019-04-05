@@ -943,8 +943,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 				throw new InvalidArgumentException( 'missing required options key: usePro' );
 			}
 
-			$license_subdomain = boolval( $options['usePro'] ) ? 'pro' : 'use';
-
 			if ( ! array_key_exists( 'version', $options ) ) {
 				throw new InvalidArgumentException( 'missing required options key: version' );
 			}
@@ -998,9 +996,11 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 					 */
 					add_action(
 						'wp_enqueue_scripts',
-						function () use ( $resources, $version, $options, $license_subdomain ) {
+						function () use ( $resources, $version, $options ) {
 							// phpcs:ignore WordPress.WP.EnqueuedResourceParameters
 							wp_enqueue_style( self::RESOURCE_HANDLE_V4SHIM, $resources[1]->source(), null, null );
+
+							$license_subdomain = boolval( $options['usePro'] ) ? 'pro' : 'use';
 
 							$font_face = <<< EOT
 @font-face {
