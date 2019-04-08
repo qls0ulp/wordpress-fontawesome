@@ -97,8 +97,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome_Config_Controller' ) ) :
 			ob_end_clean();
 
 			return array(
-				'adminClientInternal'   => FontAwesome::ADMIN_USER_CLIENT_NAME_INTERNAL,
-				'adminClientExternal'   => FontAwesome::ADMIN_USER_CLIENT_NAME_EXTERNAL,
 				'options'               => $fa->options(),
 				'clientPreferences'     => $fa->client_preferences(),
 				'conflicts'             => $fa->conflicts(),
@@ -137,7 +135,7 @@ if ( ! class_exists( 'FortAwesome\FontAwesome_Config_Controller' ) ) :
 
 				$this->release_provider()->load_releases();
 
-				fa()->gather_preferences();
+				$fa->gather_preferences();
 
 				$data = $this->build_item( $fa );
 
@@ -162,7 +160,9 @@ if ( ! class_exists( 'FortAwesome\FontAwesome_Config_Controller' ) ) :
 
 			try {
 				$item = $this->prepare_item_for_database( $request );
-				$item['options']['adminClientLoadSpec']['clientVersion'] = time();
+
+
+				// TODO: fix up this logic to work with the new world
 
 				// Rather than directly updating the options in the db, we'll run the new adminClientSpec through the
 				// normal load process. If it satisfies all constraints, the new adminClientLoadSpec spec will be

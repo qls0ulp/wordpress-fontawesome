@@ -81,15 +81,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		const OPTIONS_KEY = 'font-awesome';
 		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 		/**
-		 * @ignore
-		 */
-		const ADMIN_USER_CLIENT_NAME_INTERNAL = 'user';
-		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
-		/**
-		 * @ignore
-		 */
-		const ADMIN_USER_CLIENT_NAME_EXTERNAL = 'You';
-		/**
 		 * The unique WordPress plugin slug for this plugin.
 		 *
 		 * @since 4.0.0
@@ -147,12 +138,15 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 
 		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 		/**
+		 * We will not use a default for version, since we want the version stored in the options
+		 * to always be resolved to an actual version number, which requires that the release
+		 * provider successfully runs at least once. We'll do that upon plugin activation.
+		 *
 		 * @ignore
 		 */
 		const DEFAULT_USER_OPTIONS = array(
 			'usePro'                    => false,
 			'removeUnregisteredClients' => false,
-			'version'                   => 'latest',
 			'v4compat'                  => true,
 			'technology'                => 'webfont',
 			'svgPseudoElements'         => false,
@@ -659,7 +653,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 
 		/**
 		 * Returns current options with defaults.
-		 * If the version is literally "latest", then "latest" is *not* resolved.
 		 *
 		 * @internal
 		 * @ignore
@@ -667,7 +660,7 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		 */
 		public function options() {
 			$options = get_option( self::OPTIONS_KEY );
-			return wp_parse_args( $this->convert_options( $options ), self::DEFAULT_USER_OPTIONS );
+			return $this->convert_options( $options );
 		}
 
 		/**
@@ -729,23 +722,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 			}
 
 			return $converted_options;
-		}
-
-		/**
-		 * Returns current options with defaults. Resolves the latest version. So if the version is "latest",
-		 * it replaces that with an actual version number, like 5.8.1.
-		 *
-		 * @internal
-		 * @ignore
-		 * @throws FontAwesome_NoReleasesException
-		 * @return array
-		 */
-		public function options_with_resolved_version() {
-			$options = $this->options();
-			if ( 'latest' === $options['version'] ) {
-				$options['version'] = $this->get_latest_version();
-			}
-			return $options;
 		}
 
 		/**
@@ -926,9 +902,6 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		/**
 		 * Reports the version of Font Awesome assets being loaded.
 		 *
-		 * If the site owner has configured the plugin to load the "latest" version, this function resolves
-		 * the actual version number.
-		 *
 		 * Your theme or plugin should probably query this in order to determine whether all of the icons used in your
 		 * templates will be available, especially if you tend to use newer icons. It should be really easy
 		 * for site owners to update to a new Font Awesome version to accommodate your templates--just a simple dropdown
@@ -937,13 +910,10 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		 *
 		 * @since 4.0.0
 		 *
-		 * @throws FontAwesome_NoReleasesException
 		 * @return string
 		 */
 		public function version() {
-			$options = $this->options_with_resolved_version();
-
-			return $options['version'];
+			return $this->options()['version'];
 		}
 
 		/**
