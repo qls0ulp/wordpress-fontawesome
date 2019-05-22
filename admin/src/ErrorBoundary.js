@@ -1,5 +1,6 @@
 import React from 'react'
 import ErrorFallbackView from './ErrorFallbackView'
+import { get } from 'lodash'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -17,7 +18,9 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       //render fallback UI
-      return <ErrorFallbackView/>
+      return <ErrorFallbackView
+        message={ get(this.state.error, 'message', '') }
+      />
     } else {
       //when there's not an error, render children untouched
       return this.props.children
