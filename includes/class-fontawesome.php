@@ -145,11 +145,11 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		 * @ignore
 		 */
 		const DEFAULT_USER_OPTIONS = array(
-			'usePro'                    => false,
-			'removeUnregisteredClients' => false,
-			'v4compat'                  => true,
-			'technology'                => 'webfont',
-			'svgPseudoElements'         => false,
+			'usePro'            => false,
+			'removeConflicts'   => false,
+			'v4compat'          => true,
+			'technology'        => 'webfont',
+			'svgPseudoElements' => false,
 		);
 
 		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
@@ -698,7 +698,7 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 			}
 
 			if ( isset( $options['removeUnregisteredClients'] ) ) {
-				$converted_options['removeUnregisteredClients'] = $options['removeUnregisteredClients'];
+				$converted_options['removeConflicts'] = $options['removeUnregisteredClients'];
 			}
 
 			if ( isset( $options['version'] ) ) {
@@ -1189,7 +1189,7 @@ EOT;
 				'wp_print_styles',
 				function() use ( $obj, $options ) {
 					$obj->detect_unregistered_clients();
-					if ( $options['removeUnregisteredClients'] ) {
+					if ( $options['removeConflicts'] ) {
 						$obj->remove_unregistered_clients();
 					}
 				},
