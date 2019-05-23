@@ -26,6 +26,15 @@ add_action('wp_enqueue_scripts', function(){
   wp_enqueue_style( 'plugin-gamma-style', plugins_url( 'style.css', __FILE__ ) );
 }, 99);
 
+add_action('wp_enqueue_scripts', function(){
+	wp_enqueue_script(
+		'GAMMA_PLUGIN_LOG_PREFIX' . "-diagnose-font-faces",
+		trailingslashit(content_url()) . 'js/diagnose-font-faces.js',
+		array(),
+		null,
+		true
+	);
+}, 99);
 
 add_action('font_awesome_enqueued', function($loadSpec){
 	error_log(
