@@ -36,17 +36,6 @@ add_action('wp_enqueue_scripts', function(){
 	);
 }, 99);
 
-add_action('font_awesome_enqueued', function($loadSpec){
-	error_log(
-		GAMMA_PLUGIN_LOG_PREFIX .
-		" font_awesome_enqueued: " .
-		"method: " .
-		FortAwesome\fa()->technology() .
-		", ver: " .
-		FortAwesome\fa()->version()
-	);
-}, 10, 3);
-
 add_filter('the_content', function($content){
   $pre_content = <<<EOT
 <div class="plugin-gamma-pre-content" style="border: 1px solid grey;">
