@@ -6,6 +6,8 @@
  * @noinspection PhpIncludeInspection
  */
 
+// phpcs:ignoreFile
+
 namespace FortAwesome;
 
 use \ReflectionException, \ReflectionProperty, \Exception;
@@ -38,8 +40,7 @@ function mock_singleton_method( $obj, $type, $method, callable $init ) {
 		$init( $mock->method( $method ) );
 		return $mock;
 	} catch ( ReflectionException $e ) {
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions
-		error_log( 'Reflection error: ' . $e );
+		print( 'Reflection error: ' . $e );
 		return null;
 	}
 }
