@@ -6,25 +6,28 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faInfoCircle,
   faThumbsUp,
+  faSpinner,
   faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 
 function getIcon(props = {}){
   switch(props.type){
     case 'info':
-      return faInfoCircle
+      return <FontAwesomeIcon icon={ faInfoCircle } size='lg' title='info' fixedWidth />
     case 'warning':
-      return faExclamationTriangle
+      return <FontAwesomeIcon icon={ faExclamationTriangle } title='warning' size='lg' fixedWidth />
+    case 'pending':
+      return <FontAwesomeIcon icon={ faSpinner } title='pending' spin size='lg' fixedWidth />
     case 'success':
-      return faThumbsUp
+      return <FontAwesomeIcon icon={ faThumbsUp } title='success' size='lg' title='info' fixedWidth />
     default:
-      return faExclamationTriangle
+      return <FontAwesomeIcon icon={ faExclamationTriangle } title='warning' size='lg' fixedWidth />
   }
 }
 
 function Alert(props = {}) {
   return<div className={ classnames(styles['alert'], styles[`alert-${ props.type }`]) } role="alert">
     <div className={ styles['alert-icon'] }>
-      <FontAwesomeIcon icon={ getIcon(props) } size='lg' fixedWidth />
+      { getIcon(props) }
     </div>
     <div className={ styles['alert-message'] }>
       <h2 className={ styles['alert-title'] }>
@@ -39,7 +42,7 @@ function Alert(props = {}) {
 
 Alert.propTypes = {
   title: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['info', 'warning', 'success']),
+  type: PropTypes.oneOf(['info', 'warning', 'success', 'pending']),
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.element),
     PropTypes.string
