@@ -18,7 +18,7 @@ function getIcon(props = {}){
     case 'pending':
       return <FontAwesomeIcon icon={ faSpinner } title='pending' spin size='lg' fixedWidth />
     case 'success':
-      return <FontAwesomeIcon icon={ faThumbsUp } title='success' size='lg' title='info' fixedWidth />
+      return <FontAwesomeIcon icon={ faThumbsUp } title='success' size='lg' fixedWidth />
     default:
       return <FontAwesomeIcon icon={ faExclamationTriangle } title='warning' size='lg' fixedWidth />
   }
