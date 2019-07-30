@@ -1629,32 +1629,20 @@ EOT;
 					} 
 					
 					foreach ( [ 'before', 'after' ] as $position ) {
-						$extras = $collection->get_data($handle, $position);
-						if ( $extras && count($extras) > 0 ) {
-							foreach( $extras as $data) {
-								if( $data && $this->is_inline_data_blacklisted($data) ) {
-									array_push($conflicts, $position);
-									/**
-									 * We don't need to search the whole array. We can bail early on the first match.
-									 * All we're doing here is indicating whether this style or script as *any*
-									 * 'before' or 'after' resources that are in our blacklist (i.e. conflicts)
-									 * When we actually do the removal of these conflicts, we'll need to recompute the md5
-									 * to make sure that we remove the right ones, since it's at least conceivable that
-									 * the index/order of these elements in the extras array might be different.
-									 */
-									break;
-								}
-							}
-						} 
+						$data = $collection->get_data($handle, $position);
+						if( $this->is_inline_data_blacklisted($data) ) {
+							array_push($conflicts, $position);
+						}
 					}
 
 					if ( $this->is_url_blacklisted($details->src) ) {
 							array_push($conflicts, 'src');
 					}
+
 					/**
-					 * So we'll have one "unregistered client" for each resource handle. But that handle may represent
-					 * any number of actual conflicts: the external resource identified by "src" and/or any number of
-					 * 'before' or 'after' inline data elements.
+					 * So we'll have one "unregistered client" for each resource handle. That handle may represent
+					 * 1, 2 or 3 resource conflicts: the external resource identified by "src", the "before" resource,
+					 * the "after" resource, or any combination of those.
 					 */
 					if(count($conflicts) > 0){
 						array_push(
@@ -1680,31 +1668,24 @@ EOT;
 		public function remove_unregistered_clients() {
 			$wp_styles  = wp_styles();
 			$wp_scripts = wp_scripts();
-					// To remove that inline stylesheet
-					// unset( $this->registered[ $handle ]->extra[ 'after' ] );
 
 			foreach ( $this->unregistered_clients as $client ) {
 				$resource_type = $client['type'];
 
 			  /**
 				 * If we dequeue the main asset, then it automatically gets rid of any associated inline styles or scripts,
-				 * so we can skip looking for those. Hopefully, it's rare-to-never case that there's a _conflict_
-				 * with the main resource AND something we need to keep in that main resource's associated extra inline
-				 * resources. Because in that case, this removal will be too greedy / aggressive. But we seem to be
-				 * at the mercy of how WordPress handles inline styles and scripts (i.e. they must be added to previously
-				 * registerd styles or scripts).
+				 * so we can skip looking for those. Hopefully, it's a rare-to-never case that there's a _conflict_
+				 * with the main resource AND something we need to keep in that resource's "before" or "after" extras.
+				 * Because in that case, removal of the main resource will be too greedy / aggressive. But we seem to be
+				 * at the mercy of how WordPress handles inline styles and scripts (i.e. they must be added to 
+				 * styles or scripts that have already been registered).
 				 */
 				if( FALSE !== array_search( 'src', $client['conflicts'] ) ) {
 					call_user_func("wp_dequeue_$resource_type", $client['handle'] );
 				} else {
 					foreach ( $client['conflicts'] as $conflict ) {
 						$collection = 'style' === $resource_type ? $wp_styles : $wp_scripts;
-
-						foreach( $collection->registered[$client['handle']]->extra[$conflict] as $index => $data ) {
-							if( md5("\n" . $data . "\n") ) {
-								unset( $collection->registered[$client['handle']]->extra[$conflict][$index] );
-							}
-						}
+						unset( $collection->registered[$client['handle']]->extra[$conflict] );
 					}
 				}
 			}
@@ -1719,14 +1700,22 @@ EOT;
 		public function is_inline_data_blacklisted($data) {
 			/**
 			 * As of WordPress 5.2.2, both WP_Styles::print_inline_style and WP_Scripts::print_inline_script
-			 * add a newline before and after the raw data. So we'll run the md5 checksum on the data after adding
-			 * those newlines. This is a little risky, because there's no guarantee that WordPress
-			 * will continue to do things this way. But at worst--if that implementation detail changes--it
-			 * will mean that we get a false negative when matching for blacklisted elements.
-			 * So, nothing will crash--it just means that a conflict that we'd intended to catch will
+			 * join (implode) the set of 'before' or 'after' resources with a newline, and then wrap the whole
+			 * thing in newlines when printing the <style> or <script> tag. So that's how we'll have to
+			 * reconstruct those inline resources here in order to produce the same input for the md5 function
+			 * that would have been used by the Conflict Detector in the browser.
+			 * 
+			 * Since this newline handling is not documenting as part of the spec, we're admittedly at some risk
+			 * of this changing out from under us. At worst, if that implementation detail changes, it
+			 * will just mean that we get a false negative when matching for blacklisted elements.
+			 * Nothing will crash, but a conflict that we'd intended to catch will
 			 * have slipped through. Our automated test suite should catch this, though.
 			 */
-			return FALSE !== array_search( md5("\n" . $data . "\n"), $this->blacklist() );
+			if ( $data && is_array($data) && count($data) > 0 ) {
+			  return FALSE !== array_search( md5("\n" . implode("\n", $data) . "\n"), $this->blacklist() );
+			} else {
+				return FALSE;
+			}
 		}
 
 		/**
