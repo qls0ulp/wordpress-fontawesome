@@ -209,6 +209,15 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		/**
 		 * @ignore
 		 */
+		protected $blacklist = array(
+			'7ca699f29404dcdb477ffe225710067f',
+			'51503143c3fa3dff9ca49c2a9fd532fc'
+		);
+
+		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
+		/**
+		 * @ignore
+		 */
 		protected $screen_id = null;
 
 		/**
@@ -1602,9 +1611,6 @@ EOT;
 						|| preg_match( '/' . self::RESOURCE_HANDLE . '/', $handle ) ) {
 						continue;
 					}
-					// To remove that inline stylesheet
-					// unset( $this->registered[ $handle ]->extra[ 'after' ] );
-				
 					/**
 					 * For each handle, we need to check whether there's a conflict for the base resource itself,
 					 * on its "src" attribute (the URL of an external script or stylesheet).
@@ -1626,16 +1632,7 @@ EOT;
 						$extras = $collection->get_data($handle, $position);
 						if ( $extras && count($extras) > 0 ) {
 							foreach( $extras as $data) {
-								/**
-								 * As of WordPress 5.2.2, both WP_Styles::print_inline_style and WP_Scripts::print_inline_script
-								 * add a newline before and after the raw data. So we'll run the md5 checksum on the data after adding
-								 * those newlines. This is a little risky, because there's no guarantee that WordPress
-								 * will continue to do things this way. But at worst--if that implementation detail changes--it
-								 * will mean that we get a false negative when matching for blacklisted elements.
-								 * So, nothing will crash--it just means that a conflict that we'd intended to catch will
-								 * have slipped through. Our automated test suite should catch this, though.
-								 */
-								if( $data && FALSE !== array_search(md5("\n" . $data . "\n"), $this->blacklist()) ) {
+								if( $data && $this->is_inline_data_blacklisted($data) ) {
 									array_push($conflicts, $position);
 									/**
 									 * We don't need to search the whole array. We can bail early on the first match.
@@ -1650,7 +1647,8 @@ EOT;
 							}
 						} 
 					}
-					if ( array_search(md5($details->src), $this->blacklist() ) ) {
+
+					if ( $this->is_url_blacklisted($details->src) ) {
 							array_push($conflicts, 'src');
 					}
 					/**
@@ -1673,24 +1671,72 @@ EOT;
 			}
 		}
 
-		// phpcs:ignore Generic.Commenting.DocComment.MissingShort
 		/**
+		 * This function is not part of this plugin's public API.
+		 *
 		 * @ignore
+		 * @internal
 		 */
-		protected function remove_unregistered_clients() {
+		public function remove_unregistered_clients() {
+			$wp_styles  = wp_styles();
+			$wp_scripts = wp_scripts();
+					// To remove that inline stylesheet
+					// unset( $this->registered[ $handle ]->extra[ 'after' ] );
+
 			foreach ( $this->unregistered_clients as $client ) {
-				switch ( $client['type'] ) {
-					case 'style':
-						wp_dequeue_style( $client['handle'] );
-						break;
-					case 'script':
-						wp_dequeue_script( $client['handle'] );
-						break;
-					default:
-						// phpcs:ignore WordPress.PHP.DevelopmentFunctions
-						error_log( 'WARNING: unexpected client type: ' . $client['type'] );
+				$resource_type = $client['type'];
+
+			  /**
+				 * If we dequeue the main asset, then it automatically gets rid of any associated inline styles or scripts,
+				 * so we can skip looking for those. Hopefully, it's rare-to-never case that there's a _conflict_
+				 * with the main resource AND something we need to keep in that main resource's associated extra inline
+				 * resources. Because in that case, this removal will be too greedy / aggressive. But we seem to be
+				 * at the mercy of how WordPress handles inline styles and scripts (i.e. they must be added to previously
+				 * registerd styles or scripts).
+				 */
+				if( FALSE !== array_search( 'src', $client['conflicts'] ) ) {
+					call_user_func("wp_dequeue_$resource_type", $client['handle'] );
+				} else {
+					foreach ( $client['conflicts'] as $conflict ) {
+						$collection = 'style' === $resource_type ? $wp_styles : $wp_scripts;
+
+						foreach( $collection->registered[$client['handle']]->extra[$conflict] as $index => $data ) {
+							if( md5("\n" . $data . "\n") ) {
+								unset( $collection->registered[$client['handle']]->extra[$conflict][$index] );
+							}
+						}
+					}
 				}
 			}
+		}
+
+		/**
+		 * This function is not part of this plugin's public API.
+		 *
+		 * @ignore
+		 * @internal
+		 */
+		public function is_inline_data_blacklisted($data) {
+			/**
+			 * As of WordPress 5.2.2, both WP_Styles::print_inline_style and WP_Scripts::print_inline_script
+			 * add a newline before and after the raw data. So we'll run the md5 checksum on the data after adding
+			 * those newlines. This is a little risky, because there's no guarantee that WordPress
+			 * will continue to do things this way. But at worst--if that implementation detail changes--it
+			 * will mean that we get a false negative when matching for blacklisted elements.
+			 * So, nothing will crash--it just means that a conflict that we'd intended to catch will
+			 * have slipped through. Our automated test suite should catch this, though.
+			 */
+			return FALSE !== array_search( md5("\n" . $data . "\n"), $this->blacklist() );
+		}
+
+		/**
+		 * This function is not part of this plugin's public API.
+		 *
+		 * @ignore
+		 * @internal
+		 */
+		public function is_url_blacklisted($url) {
+		  return FALSE !== array_search( md5($url), $this->blacklist() );
 		}
 
 		/**

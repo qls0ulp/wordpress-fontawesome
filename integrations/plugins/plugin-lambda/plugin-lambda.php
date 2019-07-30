@@ -24,7 +24,15 @@ foreach( ['wp_enqueue_scripts', 'admin_enqueue_scripts', 'login_enqueue_scripts'
 		wp_enqueue_style( 'plugin-lambda-style', plugins_url( 'style.css', __FILE__ ) );
 		wp_add_inline_style(
 				'plugin-lambda-style',
+				'.plugin-lambda { font-size: large; }'
+		);
+		wp_add_inline_style(
+				'plugin-lambda-style',
 				$css_content
+		);
+		wp_add_inline_style(
+				'plugin-lambda-style',
+				'.plugin-lambda { color: green; }'
 		);
 	}, 99 );
 }
