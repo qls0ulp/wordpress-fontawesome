@@ -210,8 +210,11 @@ if ( ! class_exists( 'FortAwesome\FontAwesome' ) ) :
 		 * @ignore
 		 */
 		protected $blacklist = array(
-			'7ca699f29404dcdb477ffe225710067f',
-			'51503143c3fa3dff9ca49c2a9fd532fc'
+			/**
+			 * These would be the md5 checksums for what would be enqued by plugin-lambda when testing.
+			 * '7ca699f29404dcdb477ffe225710067f',
+			 * '5255dfc6852a2ecca5589a756547ab12'
+			 */
 		);
 
 		// phpcs:ignore Generic.Commenting.DocComment.MissingShort

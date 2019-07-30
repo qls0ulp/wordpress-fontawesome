@@ -15,13 +15,14 @@ define( 'LAMBDA_PLUGIN_VERSION', '0.0.1' );
 define( 'LAMBDA_PLUGIN_LOG_PREFIX', 'lambda-plugin' );
 
 $dir = dirname( __FILE__ );
-$filename = trailingslashit($dir) . 'font-awesome-4.7.0.css';
+$filename = trailingslashit($dir) . 'fa-4.7.0.css';
 $css_fd = fopen($filename, 'r');
 $css_content = fread($css_fd, filesize($filename));
 
 foreach( ['wp_enqueue_scripts', 'admin_enqueue_scripts', 'login_enqueue_scripts'] as $action ) {
 	add_action( $action, function () use($css_content) {
 		wp_enqueue_style( 'plugin-lambda-style', plugins_url( 'style.css', __FILE__ ) );
+		wp_enqueue_style( 'plugin-lambda-fa-4', plugins_url( 'fa-4.7.0.css', __FILE__ ), array(), null );
 		// wp_add_inline_style(
 		// 		'plugin-lambda-style',
 		// 		'.plugin-lambda { font-size: large; }'
