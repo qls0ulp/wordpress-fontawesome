@@ -1602,13 +1602,70 @@ EOT;
 						|| preg_match( '/' . self::RESOURCE_HANDLE . '/', $handle ) ) {
 						continue;
 					}
-					if ( strpos( $details->src, 'fontawesome' ) || strpos( $details->src, 'font-awesome' ) ) {
+					// To remove that inline stylesheet
+					// unset( $this->registered[ $handle ]->extra[ 'after' ] );
+				
+					/**
+					 * For each handle, we need to check whether there's a conflict for the base resource itself,
+					 * on its "src" attribute (the URL of an external script or stylesheet).
+					 * We also need to check the 'before' and 'after' data for every resource to see if it has
+					 * any inline style or script data associated with it. For our purposes, these are independent potential
+					 * sources of conflict. In other words, the Conflict Detector reports md5 checksums for every external
+					 * or inline style and script without reference to each other. So the only way we can know that we've
+					 * found all of the conflicts is to make sure that we've inspected all of the inline styles and scripts,
+					 * and the only way we can know that we've done _that_ is to look at all of the 'before' and 'after' data
+					 * for _ever_ resource.
+					 */
+					$conflicts = [];
+
+					if( strpos( $details->src, 'fontawesome' ) || strpos( $details->src, 'font-awesome' ) ) {
+						array_push($conflicts, 'src');
+					} 
+					
+					foreach ( [ 'before', 'after' ] as $position ) {
+						$extras = $collection->get_data($handle, $position);
+						if ( $extras && count($extras) > 0 ) {
+							foreach( $extras as $data) {
+								/**
+								 * As of WordPress 5.2.2, both WP_Styles::print_inline_style and WP_Scripts::print_inline_script
+								 * add a newline before and after the raw data. So we'll run the md5 checksum on the data after adding
+								 * those newlines. This is a little risky, because there's no guarantee that WordPress
+								 * will continue to do things this way. But at worst--if that implementation detail changes--it
+								 * will mean that we get a false negative when matching for blacklisted elements.
+								 * So, nothing will crash--it just means that a conflict that we'd intended to catch will
+								 * have slipped through. Our automated test suite should catch this, though.
+								 */
+								if( $data && FALSE !== array_search(md5("\n" . $data . "\n"), $this->blacklist()) ) {
+									array_push($conflicts, $position);
+									/**
+									 * We don't need to search the whole array. We can bail early on the first match.
+									 * All we're doing here is indicating whether this style or script as *any*
+									 * 'before' or 'after' resources that are in our blacklist (i.e. conflicts)
+									 * When we actually do the removal of these conflicts, we'll need to recompute the md5
+									 * to make sure that we remove the right ones, since it's at least conceivable that
+									 * the index/order of these elements in the extras array might be different.
+									 */
+									break;
+								}
+							}
+						} 
+					}
+					if ( array_search(md5($details->src), $this->blacklist() ) ) {
+							array_push($conflicts, 'src');
+					}
+					/**
+					 * So we'll have one "unregistered client" for each resource handle. But that handle may represent
+					 * any number of actual conflicts: the external resource identified by "src" and/or any number of
+					 * 'before' or 'after' inline data elements.
+					 */
+					if(count($conflicts) > 0){
 						array_push(
 							$this->unregistered_clients,
 							array(
-								'handle' => $handle,
-								'type'   => $key,
-								'src'    => $details->src,
+								'handle'    => $handle,
+								'type'      => $key,
+								'src'       => $details->src,
+								'conflicts' => $conflicts
 							)
 						);
 					}
@@ -1879,6 +1936,10 @@ EOT;
 		 */
 		protected function plugin_version() {
 			return self::PLUGIN_VERSION;
+		}
+
+		public function blacklist() {
+			return $this->blacklist;
 		}
 	}
 
